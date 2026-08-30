@@ -82,6 +82,20 @@ describe('DuckDbClient', () => {
     expect(worker.messages).toHaveLength(0)
   })
 
+  it('drops a safe source and rejects unsafe source names', async () => {
+    const worker = new FakeWorker()
+    const client = new DuckDbClient({ workerFactory: () => worker, timeoutMs: 100 })
+    const pending = client.dropSource('orders')
+    const message = worker.messages[0]?.message as { type: string; requestId: string; name: string }
+    expect(message).toMatchObject({ type: 'drop', name: 'orders' })
+    worker.respond({ type: 'success', requestId: message.requestId })
+    await expect(pending).resolves.toBeUndefined()
+    await expect(client.dropSource('orders;DROP')).rejects.toThrow('unsafe source name')
+    const closing = client.close()
+    worker.respond({ type: 'success', requestId: 'close' })
+    await closing
+  })
+
   it('resolves normalized query rows', async () => {
     const worker = new FakeWorker()
     const client = new DuckDbClient({ workerFactory: () => worker, timeoutMs: 100 })

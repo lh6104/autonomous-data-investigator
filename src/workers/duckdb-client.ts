@@ -1,6 +1,7 @@
 /// <reference types="vite/client" />
 import duckDbWorkerUrl from './duckdb.worker?worker&url'
 import type { QueryResult, SqlExecutor, SqlSource } from '@/core/contracts'
+import type { DuckDbRequest, DuckDbResponse } from './duckdb-protocol'
 
 export interface WorkerLike {
   postMessage(message: DuckDbRequest, transfer?: Transferable[]): void
@@ -47,17 +48,6 @@ export class QueryExecutionError extends Error {
   }
 }
 
-type DuckDbRequest =
-  | { readonly type: 'register'; readonly name: string; readonly bytes: ArrayBuffer; readonly format: 'csv' | 'parquet' }
-  | { readonly type: 'explain'; readonly requestId: string; readonly sql: string }
-  | { readonly type: 'query'; readonly requestId: string; readonly sql: string }
-  | { readonly type: 'cancel'; readonly requestId: string }
-  | { readonly type: 'close' }
-
-type DuckDbResponse =
-  | { readonly type: 'success'; readonly requestId: string; readonly result?: QueryResult }
-  | { readonly type: 'error'; readonly requestId: string; readonly error: { readonly message: string; readonly name?: string } }
-
 type Pending = {
   readonly resolve: (value: unknown) => void
   readonly reject: (reason: unknown) => void
@@ -67,11 +57,11 @@ type Pending = {
 }
 
 const MAX_ROWS = 10_000
-const DEFAULT_TIMEOUT_MS = 30_000
+const DEFAULT_TIMEOUT_MS = 90_000
 const SAFE_NAME = /^[A-Za-z_][A-Za-z0-9_]{0,62}$/
 const DEFAULT_WORKER_URL = duckDbWorkerUrl
 
-const defaultWorkerFactory: WorkerFactory = (url) => new Worker(url, { type: 'classic' })
+const defaultWorkerFactory: WorkerFactory = (url) => new Worker(url, { type: 'module' })
 
 function assertSafeName(name: string): void {
   if (!SAFE_NAME.test(name)) throw new TypeError(`unsafe source name '${name}'`)
@@ -138,6 +128,12 @@ export class DuckDbClient implements SqlExecutor {
     const requestId = source.name
     const message: DuckDbRequest = { type: 'register', name: source.name, bytes: source.bytes, format: source.format }
     return this.send<void>(requestId, message, undefined, [source.bytes])
+  }
+
+  dropSource(name: string): Promise<void> {
+    try { assertSafeName(name) } catch (error) { return Promise.reject(error) }
+    const requestId = this.createRequestId('drop')
+    return this.send<void>(requestId, { type: 'drop', requestId, name })
   }
 
   explain(sql: string): Promise<void> {

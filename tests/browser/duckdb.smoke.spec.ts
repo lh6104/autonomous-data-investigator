@@ -3,6 +3,7 @@ import { test, expect } from '@playwright/test'
 
 const orders = await readFile('tests/fixtures/orders.csv')
 const orderItems = await readFile('tests/fixtures/order_items.csv')
+const parquetFixture = await readFile('tests/fixtures/null_list.parquet')
 
 test('executes guarded local CSV queries in DuckDB-Wasm', async ({ page, baseURL }) => {
   const origin = new URL(baseURL ?? 'http://127.0.0.1:5173').origin
@@ -35,4 +36,34 @@ test('executes guarded local CSV queries in DuckDB-Wasm', async ({ page, baseURL
 
   expect(values.primary.rows).toEqual([{ net_revenue: 125 }])
   expect(values.verification.rows).toEqual([{ item_level_revenue: 125 }])
+})
+
+test('registers and queries a local Parquet file in DuckDB-Wasm', async ({ page, baseURL }) => {
+  const origin = new URL(baseURL ?? 'http://127.0.0.1:5173').origin
+  await page.route('**/*', async (route) => {
+    if (new URL(route.request().url()).origin !== origin) return route.abort()
+    return route.continue()
+  })
+  page.on('response', (response) => {
+    if (response.url().includes('parquet.duckdb_extension')) console.log('[extension]', response.status(), response.url())
+  })
+  await page.goto('/')
+
+  const result = await page.evaluate(async (fixtureBytes) => {
+    const { DuckDbClient } = await import(new URL('/src/workers/duckdb-client.ts', location.origin).href)
+    const client = new DuckDbClient()
+    try {
+      await client.registerSource({
+        name: 'parquet_fixture',
+        format: 'parquet',
+        bytes: Uint8Array.from(fixtureBytes).buffer
+      })
+      return await client.query('SELECT COUNT(*) AS row_count FROM parquet_fixture')
+    } finally {
+      await client.close()
+    }
+  }, [...parquetFixture])
+
+  expect(result.rows).toHaveLength(1)
+  expect(Number(result.rows[0]?.row_count)).toBeGreaterThan(0)
 })

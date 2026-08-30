@@ -1,16 +1,6 @@
 import { AsyncDuckDB, VoidLogger } from '@duckdb/duckdb-wasm'
 import type { QueryResult } from '@/core/contracts'
-
-export type DuckDbRequest =
-  | { readonly type: 'register'; readonly name: string; readonly bytes: ArrayBuffer; readonly format: 'csv' | 'parquet' }
-  | { readonly type: 'explain'; readonly requestId: string; readonly sql: string }
-  | { readonly type: 'query'; readonly requestId: string; readonly sql: string }
-  | { readonly type: 'cancel'; readonly requestId: string }
-  | { readonly type: 'close' }
-
-export type DuckDbResponse =
-  | { readonly type: 'success'; readonly requestId: string; readonly result?: QueryResult }
-  | { readonly type: 'error'; readonly requestId: string; readonly error: { readonly message: string; readonly name?: string } }
+import type { DuckDbRequest, DuckDbResponse } from './duckdb-protocol'
 
 const MAX_ROWS = 10_000
 const SAFE_NAME = /^[A-Za-z_][A-Za-z0-9_]{0,62}$/
@@ -81,6 +71,8 @@ async function ensureInitialized(): Promise<void> {
     await instance.open({ path: ':memory:' })
     db = instance
     connection = await instance.connect()
+    const parquetExtensionUrl = new URL('/duckdb/extensions/duckdb-wasm/v1.4.3/wasm_mvp/parquet.duckdb_extension.wasm', scope.location.origin).toString()
+    await connection.query("LOAD '" + parquetExtensionUrl.replaceAll("'", "''") + "';")
   })()
   try {
     await initialization
@@ -119,6 +111,13 @@ async function explain(requestId: string, sql: string): Promise<void> {
   }
 }
 
+async function drop(requestId: string, name: string): Promise<void> {
+  assertSafeName(name)
+  await ensureInitialized()
+  if (!connection) throw new Error('DuckDB is not initialized')
+  await connection.query(`DROP TABLE IF EXISTS ${sqlIdentifier(name)};`)
+}
+
 async function query(requestId: string, sql: string): Promise<QueryResult> {
   await ensureInitialized()
   if (!connection) throw new Error('DuckDB is not initialized')
@@ -128,25 +127,24 @@ async function query(requestId: string, sql: string): Promise<QueryResult> {
   try {
     await connection.query(explainSql(sql))
     checkCancelled(requestId)
-    const stream = await connection.send(sql)
-    const columns = stream.schema.fields.map((field) => field.name)
+    const table = await connection.query(sql)
+    const columns = table.schema.fields.map((field) => field.name)
     const rows: Readonly<Record<string, unknown>>[] = []
-    let rowCount = 0
-    for await (const batch of stream) {
+    const sourceRows = table.toArray()
+    const rowCount = sourceRows.length
+    for (const row of sourceRows.slice(0, MAX_ROWS)) {
       checkCancelled(requestId)
-      for (const row of batch.toArray()) {
-        rowCount += 1
-        if (rows.length < MAX_ROWS) rows.push(rowToRecord(row, columns))
-      }
+      rows.push(rowToRecord(row, columns))
     }
     checkCancelled(requestId)
-    return {
+    const result = {
       columns,
       rows,
       rowCount,
       durationMs: Math.round((performance.now() - started) * 100) / 100,
       truncated: rowCount > MAX_ROWS
     }
+    return result
   } finally {
     activeRequestId = null
     cancelled.delete(requestId)
@@ -165,6 +163,11 @@ async function processRequest(request: DuckDbRequest): Promise<void> {
   }
   if (request.type === 'explain') {
     await explain(request.requestId, request.sql)
+    respond({ type: 'success', requestId: request.requestId })
+    return
+  }
+  if (request.type === 'drop') {
+    await drop(request.requestId, request.name)
     respond({ type: 'success', requestId: request.requestId })
     return
   }
