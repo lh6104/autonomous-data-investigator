@@ -1,6 +1,7 @@
 /// <reference types="vite/client" />
 import duckDbWorkerUrl from './duckdb.worker?worker&url'
 import type { QueryResult, SqlExecutor, SqlSource } from '@/core/contracts'
+import type { DuckDbRequest, DuckDbResponse } from './duckdb-protocol'
 
 export interface WorkerLike {
   postMessage(message: DuckDbRequest, transfer?: Transferable[]): void
@@ -46,17 +47,6 @@ export class QueryExecutionError extends Error {
     this.requestId = requestId
   }
 }
-
-type DuckDbRequest =
-  | { readonly type: 'register'; readonly name: string; readonly bytes: ArrayBuffer; readonly format: 'csv' | 'parquet' }
-  | { readonly type: 'explain'; readonly requestId: string; readonly sql: string }
-  | { readonly type: 'query'; readonly requestId: string; readonly sql: string }
-  | { readonly type: 'cancel'; readonly requestId: string }
-  | { readonly type: 'close' }
-
-type DuckDbResponse =
-  | { readonly type: 'success'; readonly requestId: string; readonly result?: QueryResult }
-  | { readonly type: 'error'; readonly requestId: string; readonly error: { readonly message: string; readonly name?: string } }
 
 type Pending = {
   readonly resolve: (value: unknown) => void
@@ -138,6 +128,12 @@ export class DuckDbClient implements SqlExecutor {
     const requestId = source.name
     const message: DuckDbRequest = { type: 'register', name: source.name, bytes: source.bytes, format: source.format }
     return this.send<void>(requestId, message, undefined, [source.bytes])
+  }
+
+  dropSource(name: string): Promise<void> {
+    try { assertSafeName(name) } catch (error) { return Promise.reject(error) }
+    const requestId = this.createRequestId('drop')
+    return this.send<void>(requestId, { type: 'drop', requestId, name })
   }
 
   explain(sql: string): Promise<void> {

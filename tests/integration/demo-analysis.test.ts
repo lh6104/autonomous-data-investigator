@@ -25,6 +25,10 @@ class FakeExecutor implements SqlExecutor {
     this.calls.push(`register:${source.name}`)
   }
 
+  async dropSource(name: string): Promise<void> {
+    this.calls.push(`drop:${name}`)
+  }
+
   async explain(sql: string): Promise<void> {
     this.calls.push(`explain:${sql}`)
   }

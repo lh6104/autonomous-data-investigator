@@ -124,6 +124,7 @@ export interface SqlSource {
 
 export interface SqlExecutor {
   registerSource(source: SqlSource): Promise<void>
+  dropSource(name: string): Promise<void>
   explain(sql: string): Promise<void>
   query(sql: string, signal?: AbortSignal): Promise<QueryResult>
   cancel(requestId: string): void

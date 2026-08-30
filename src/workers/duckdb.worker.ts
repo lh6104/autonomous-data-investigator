@@ -1,16 +1,6 @@
 import { AsyncDuckDB, VoidLogger } from '@duckdb/duckdb-wasm'
 import type { QueryResult } from '@/core/contracts'
-
-export type DuckDbRequest =
-  | { readonly type: 'register'; readonly name: string; readonly bytes: ArrayBuffer; readonly format: 'csv' | 'parquet' }
-  | { readonly type: 'explain'; readonly requestId: string; readonly sql: string }
-  | { readonly type: 'query'; readonly requestId: string; readonly sql: string }
-  | { readonly type: 'cancel'; readonly requestId: string }
-  | { readonly type: 'close' }
-
-export type DuckDbResponse =
-  | { readonly type: 'success'; readonly requestId: string; readonly result?: QueryResult }
-  | { readonly type: 'error'; readonly requestId: string; readonly error: { readonly message: string; readonly name?: string } }
+import type { DuckDbRequest, DuckDbResponse } from './duckdb-protocol'
 
 const MAX_ROWS = 10_000
 const SAFE_NAME = /^[A-Za-z_][A-Za-z0-9_]{0,62}$/
@@ -119,6 +109,13 @@ async function explain(requestId: string, sql: string): Promise<void> {
   }
 }
 
+async function drop(requestId: string, name: string): Promise<void> {
+  assertSafeName(name)
+  await ensureInitialized()
+  if (!connection) throw new Error('DuckDB is not initialized')
+  await connection.query(`DROP TABLE IF EXISTS ${sqlIdentifier(name)};`)
+}
+
 async function query(requestId: string, sql: string): Promise<QueryResult> {
   await ensureInitialized()
   if (!connection) throw new Error('DuckDB is not initialized')
@@ -165,6 +162,11 @@ async function processRequest(request: DuckDbRequest): Promise<void> {
   }
   if (request.type === 'explain') {
     await explain(request.requestId, request.sql)
+    respond({ type: 'success', requestId: request.requestId })
+    return
+  }
+  if (request.type === 'drop') {
+    await drop(request.requestId, request.name)
     respond({ type: 'success', requestId: request.requestId })
     return
   }
