@@ -57,11 +57,11 @@ type Pending = {
 }
 
 const MAX_ROWS = 10_000
-const DEFAULT_TIMEOUT_MS = 30_000
+const DEFAULT_TIMEOUT_MS = 90_000
 const SAFE_NAME = /^[A-Za-z_][A-Za-z0-9_]{0,62}$/
 const DEFAULT_WORKER_URL = duckDbWorkerUrl
 
-const defaultWorkerFactory: WorkerFactory = (url) => new Worker(url, { type: 'classic' })
+const defaultWorkerFactory: WorkerFactory = (url) => new Worker(url, { type: 'module' })
 
 function assertSafeName(name: string): void {
   if (!SAFE_NAME.test(name)) throw new TypeError(`unsafe source name '${name}'`)

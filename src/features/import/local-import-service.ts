@@ -63,9 +63,10 @@ export function createLocalImportService(deps: { readonly executor: SqlExecutor;
         }
         successfulTables = [...successfulTables, ...tables]
         return result([])
-      } catch {
+      } catch (error) {
         await Promise.all(registered.map(async (name) => { try { await deps.executor.dropSource(name) } catch {} }))
-        return result([failure('import_failed', '', 'Import failed. No tables were retained.')])
+        const reason = error instanceof Error ? error.message : String(error)
+        return result([failure('import_failed', '', `Import failed locally: ${reason} No new tables were retained.`)])
       }
     }
   }

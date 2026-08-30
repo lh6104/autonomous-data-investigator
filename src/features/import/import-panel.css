@@ -1,0 +1,5 @@
+.import-panel { display: grid; gap: .75rem; max-width: 52rem; }
+.import-panel fieldset, .import-panel__table { border: 1px solid #b9c2cf; padding: .75rem; }
+.import-panel label { display: block; }
+.import-panel__issues { color: #9b1c1c; }
+.import-panel__relationship { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }

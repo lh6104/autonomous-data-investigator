@@ -1,4 +1,4 @@
-import ExcelJS from 'exceljs'
+import type ExcelJS from 'exceljs'
 
 export interface XlsxSheet {
   readonly name: string
@@ -31,7 +31,8 @@ function csv(value: string): string {
 }
 
 async function workbook(file: File): Promise<ExcelJS.Workbook> {
-  const result = new ExcelJS.Workbook()
+  const module = await import('exceljs')
+  const result = new module.default.Workbook()
   await result.xlsx.load(await file.arrayBuffer())
   return result
 }

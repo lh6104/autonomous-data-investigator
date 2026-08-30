@@ -71,6 +71,8 @@ async function ensureInitialized(): Promise<void> {
     await instance.open({ path: ':memory:' })
     db = instance
     connection = await instance.connect()
+    const parquetExtensionUrl = new URL('/duckdb/extensions/duckdb-wasm/v1.4.3/wasm_mvp/parquet.duckdb_extension.wasm', scope.location.origin).toString()
+    await connection.query("LOAD '" + parquetExtensionUrl.replaceAll("'", "''") + "';")
   })()
   try {
     await initialization
@@ -125,25 +127,24 @@ async function query(requestId: string, sql: string): Promise<QueryResult> {
   try {
     await connection.query(explainSql(sql))
     checkCancelled(requestId)
-    const stream = await connection.send(sql)
-    const columns = stream.schema.fields.map((field) => field.name)
+    const table = await connection.query(sql)
+    const columns = table.schema.fields.map((field) => field.name)
     const rows: Readonly<Record<string, unknown>>[] = []
-    let rowCount = 0
-    for await (const batch of stream) {
+    const sourceRows = table.toArray()
+    const rowCount = sourceRows.length
+    for (const row of sourceRows.slice(0, MAX_ROWS)) {
       checkCancelled(requestId)
-      for (const row of batch.toArray()) {
-        rowCount += 1
-        if (rows.length < MAX_ROWS) rows.push(rowToRecord(row, columns))
-      }
+      rows.push(rowToRecord(row, columns))
     }
     checkCancelled(requestId)
-    return {
+    const result = {
       columns,
       rows,
       rowCount,
       durationMs: Math.round((performance.now() - started) * 100) / 100,
       truncated: rowCount > MAX_ROWS
     }
+    return result
   } finally {
     activeRequestId = null
     cancelled.delete(requestId)
