@@ -1,0 +1,31 @@
+{
+  "name": "synapse",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "typecheck": "tsc --noEmit",
+    "test:unit": "vitest --passWithNoTests",
+    "build": "vite build",
+    "prepare:duckdb": "node scripts/copy-duckdb-assets.mjs",
+    "prepare:demo-data": "node scripts/fetch-demo-data.mjs",
+    "verify:demo-data": "node scripts/verify-demo-data.mjs",
+    "test:browser": "playwright test"
+  },
+  "dependencies": {
+    "@duckdb/duckdb-wasm": "1.32.0",
+    "apache-arrow": "17.0.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "zod": "4.5.4"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.52.0",
+    "@types/react": "18.3.12",
+    "@types/react-dom": "18.3.1",
+    "@vitejs/plugin-react": "5.2.0",
+    "typescript": "5.9.3",
+    "vite": "7.3.6",
+    "vitest": "4.1.11"
+  }
+}

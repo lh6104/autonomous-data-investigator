@@ -1,0 +1,3 @@
+order_item_id,order_id,product_id,quantity,item_price
+I1,O1,P1,2,50.00
+I2,O3,P2,1,25.00

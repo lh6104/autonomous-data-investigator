@@ -1,0 +1,4 @@
+order_id,user_id,order_date,order_status,total_amount
+O1,U1,2025-01-03T10:00:00Z,Completed,100.00
+O2,U2,2025-01-04T10:00:00Z,Cancelled,50.00
+O3,U1,2025-02-01T10:00:00Z,Completed,25.00

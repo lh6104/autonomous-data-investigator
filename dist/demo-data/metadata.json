@@ -1,0 +1,239 @@
+{
+  "sourceUrl": "https://www.kaggle.com/datasets/abhayayare/e-commerce-dataset",
+  "datasetRef": "abhayayare/e-commerce-dataset",
+  "creator": "Abhay Ayare",
+  "attribution": "E-commerce Dataset by Abhay Ayare (Kaggle dataset abhayayare/e-commerce-dataset), licensed under CC BY-SA 4.0.",
+  "license": "CC BY-SA 4.0",
+  "retrievalDate": "2026-08-30",
+  "retrievedAt": "2026-08-30T11:28:38.500Z",
+  "tableNames": [
+    "users",
+    "products",
+    "orders",
+    "order_items",
+    "reviews",
+    "events"
+  ],
+  "rowCounts": {
+    "users": 10000,
+    "products": 2000,
+    "orders": 20000,
+    "order_items": 43525,
+    "reviews": 15000,
+    "events": 80000
+  },
+  "tables": [
+    {
+      "name": "users",
+      "file": "users.csv",
+      "rowCount": 10000,
+      "columns": [
+        "user_id",
+        "name",
+        "email",
+        "gender",
+        "city",
+        "signup_date"
+      ],
+      "piiClasses": {
+        "user_id": "identifier",
+        "name": "quasi",
+        "email": "direct",
+        "gender": "quasi",
+        "city": "quasi",
+        "signup_date": "none"
+      }
+    },
+    {
+      "name": "products",
+      "file": "products.csv",
+      "rowCount": 2000,
+      "columns": [
+        "product_id",
+        "product_name",
+        "category",
+        "price",
+        "rating"
+      ],
+      "piiClasses": {
+        "product_id": "identifier",
+        "product_name": "none",
+        "category": "none",
+        "price": "none",
+        "rating": "none"
+      }
+    },
+    {
+      "name": "orders",
+      "file": "orders.csv",
+      "rowCount": 20000,
+      "columns": [
+        "order_id",
+        "user_id",
+        "order_date",
+        "order_status",
+        "total_amount"
+      ],
+      "piiClasses": {
+        "order_id": "identifier",
+        "user_id": "identifier",
+        "order_date": "none",
+        "order_status": "none",
+        "total_amount": "none"
+      }
+    },
+    {
+      "name": "order_items",
+      "file": "order_items.csv",
+      "rowCount": 43525,
+      "columns": [
+        "order_item_id",
+        "order_id",
+        "product_id",
+        "quantity",
+        "item_price"
+      ],
+      "piiClasses": {
+        "order_item_id": "identifier",
+        "order_id": "identifier",
+        "product_id": "identifier",
+        "quantity": "none",
+        "item_price": "none"
+      }
+    },
+    {
+      "name": "reviews",
+      "file": "reviews.csv",
+      "rowCount": 15000,
+      "columns": [
+        "review_id",
+        "user_id",
+        "product_id",
+        "rating",
+        "review_text",
+        "review_date"
+      ],
+      "piiClasses": {
+        "review_id": "identifier",
+        "user_id": "identifier",
+        "product_id": "identifier",
+        "rating": "none",
+        "review_text": "none",
+        "review_date": "none"
+      }
+    },
+    {
+      "name": "events",
+      "file": "events.csv",
+      "rowCount": 80000,
+      "columns": [
+        "event_id",
+        "user_id",
+        "product_id",
+        "event_type",
+        "event_timestamp"
+      ],
+      "piiClasses": {
+        "event_id": "identifier",
+        "user_id": "identifier",
+        "product_id": "identifier",
+        "event_type": "none",
+        "event_timestamp": "none"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromTable": "users",
+      "fromColumn": "user_id",
+      "toTable": "orders",
+      "toColumn": "user_id"
+    },
+    {
+      "fromTable": "orders",
+      "fromColumn": "order_id",
+      "toTable": "order_items",
+      "toColumn": "order_id"
+    },
+    {
+      "fromTable": "products",
+      "fromColumn": "product_id",
+      "toTable": "order_items",
+      "toColumn": "product_id"
+    },
+    {
+      "fromTable": "users",
+      "fromColumn": "user_id",
+      "toTable": "reviews",
+      "toColumn": "user_id"
+    },
+    {
+      "fromTable": "products",
+      "fromColumn": "product_id",
+      "toTable": "reviews",
+      "toColumn": "product_id"
+    },
+    {
+      "fromTable": "users",
+      "fromColumn": "user_id",
+      "toTable": "events",
+      "toColumn": "user_id"
+    },
+    {
+      "fromTable": "products",
+      "fromColumn": "product_id",
+      "toTable": "events",
+      "toColumn": "product_id"
+    }
+  ],
+  "privacy": {
+    "synthetic": true,
+    "piiManifest": {
+      "users": {
+        "user_id": "identifier",
+        "name": "quasi",
+        "email": "direct",
+        "gender": "quasi",
+        "city": "quasi",
+        "signup_date": "none"
+      },
+      "products": {
+        "product_id": "identifier",
+        "product_name": "none",
+        "category": "none",
+        "price": "none",
+        "rating": "none"
+      },
+      "orders": {
+        "order_id": "identifier",
+        "user_id": "identifier",
+        "order_date": "none",
+        "order_status": "none",
+        "total_amount": "none"
+      },
+      "order_items": {
+        "order_item_id": "identifier",
+        "order_id": "identifier",
+        "product_id": "identifier",
+        "quantity": "none",
+        "item_price": "none"
+      },
+      "reviews": {
+        "review_id": "identifier",
+        "user_id": "identifier",
+        "product_id": "identifier",
+        "rating": "none",
+        "review_text": "none",
+        "review_date": "none"
+      },
+      "events": {
+        "event_id": "identifier",
+        "user_id": "identifier",
+        "product_id": "identifier",
+        "event_type": "none",
+        "event_timestamp": "none"
+      }
+    },
+    "rawRowsIncluded": false
+  }
+}
